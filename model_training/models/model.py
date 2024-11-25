@@ -2,7 +2,6 @@ from typing import List, Tuple
 
 import tensorflow as tf
 from tensorflow import keras
-import tfkan
 
 #TODO allow for a config or some parameters to be passed to this, so class does not need to be edited directly
 class ConvolutionBlock(keras.layers.Layer):
@@ -67,14 +66,18 @@ class DenseBlock(keras.layers.Layer):
         super().__init__()
         self.layer_1 = keras.layers.Dense(128, activation='relu')
         self.layer_2 = keras.layers.Dense(86, activation = 'relu')
+        self.layer_3 = keras.layers.Dense(32, activation = 'relu')
         self.dropout_1 = keras.layers.Dropout(0.2)
         self.dropout_2 = keras.layers.Dropout(0.2)
+        self.dropout_3 = keras.layers.Dropout(0.2)
 
     def call(self, inputs):
         x = self.layer_1(inputs)
         x = self.dropout_1(x)
         x = self.layer_2(x)
         x = self.dropout_2(x)
+        x = self.layer_3(x)
+        x = self.dropout_3(x)
         return x
     
 class FreqAttentionBlock(keras.layers.Layer):
@@ -87,7 +90,7 @@ class FreqAttentionBlock(keras.layers.Layer):
         
         super().__init__()
         self.freq_conv_1 = keras.layers.Conv2D(
-            64, 
+            128, 
             (4, 1), 
             strides = (1,1), 
             padding='valid', 
@@ -96,7 +99,7 @@ class FreqAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_1 = keras.layers.MaxPooling2D(pool_size = (2,1))
         self.freq_conv_2 = keras.layers.Conv2D(
-            64, 
+            128, 
             (4, 1), 
             strides = (1,1), 
             padding='valid', 
@@ -105,7 +108,7 @@ class FreqAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_2 = keras.layers.MaxPooling2D(pool_size = (2,1))
         self.freq_conv_3 = keras.layers.Conv2D(
-            64, 
+            128, 
             (4, 1), 
             strides = (1,1), 
             padding='valid', 
@@ -114,7 +117,7 @@ class FreqAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_3 = keras.layers.MaxPooling2D(pool_size = (2,1))
         self.freq_conv_4 = keras.layers.Conv2D(
-            64, 
+            128, 
             (4, 1), 
             strides = (1,1), 
             padding='valid', 
@@ -123,7 +126,7 @@ class FreqAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_4 = keras.layers.MaxPooling2D(pool_size = (2,1))
         self.freq_conv_5 = keras.layers.Conv2D(
-            64, 
+            128, 
             (4, 1), 
             strides = (1,1), 
             padding='valid', 
@@ -164,7 +167,7 @@ class TempAttentionBlock(keras.layers.Layer):
         
         super().__init__()
         self.temp_conv_1 = keras.layers.Conv2D(
-            64, 
+            128, 
             (1, 4), 
             strides = (1,1), 
             padding='valid', 
@@ -173,7 +176,7 @@ class TempAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_1 = keras.layers.MaxPooling2D(pool_size = (1,2))
         self.temp_conv_2 = keras.layers.Conv2D(
-            64, 
+            128, 
             (1, 4), 
             strides = (1,1), 
             padding='valid', 
@@ -182,7 +185,7 @@ class TempAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_2 = keras.layers.MaxPooling2D(pool_size = (1,2))
         self.temp_conv_3 = keras.layers.Conv2D(
-            64, 
+            128, 
             (1, 4), 
             strides = (1,1), 
             padding='valid', 
@@ -191,7 +194,7 @@ class TempAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_3 = keras.layers.MaxPooling2D(pool_size = (1,2))
         self.temp_conv_4 = keras.layers.Conv2D(
-            64, 
+            128, 
             (1, 4), 
             strides = (1,1), 
             padding='valid', 
@@ -200,16 +203,16 @@ class TempAttentionBlock(keras.layers.Layer):
             )
         self.max_pooling_4 = keras.layers.MaxPooling2D(pool_size = (1,2))
         self.temp_conv_5 = keras.layers.Conv2D(
-            64, 
+            128, 
             (1, 4), 
             strides = (1,1), 
             padding='valid', 
             activation='relu', 
             kernel_initializer = tf.keras.initializers.HeNormal()
             )
-        self.max_pooling_5 = keras.layers.MaxPooling2D(pool_size = (1,2))
+        self.max_pooling_5 = keras.layers.MaxPooling2D(pool_size = (1,6))
         self.temp_conv_6 = keras.layers.Conv2D(
-            64, 
+            128, 
             (1, 4), 
             strides = (1,1), 
             padding='valid', 
@@ -237,8 +240,8 @@ class TempAttentionBlock(keras.layers.Layer):
         temp_attn = self.max_pooling_4(temp_attn)
         temp_attn = self.temp_conv_5(temp_attn)
         temp_attn = self.max_pooling_5(temp_attn)
-        temp_attn = self.temp_conv_6(temp_attn)
-        temp_attn = self.max_pooling_6(temp_attn)
+        # temp_attn = self.temp_conv_6(temp_attn)
+        # temp_attn = self.max_pooling_6(temp_attn)
         
         return temp_attn
     
@@ -283,7 +286,7 @@ class CompleteAttentionBlock(keras.layers.Layer):
             tf.Tensor: Output frequency attention filter
         """
         spect = self.mel_spectrogram(inputs)
-        spect = self.batch_normalization_input(spect)
+        #spect = self.batch_normalization_input(spect)
         spect = tf.expand_dims(spect, axis = -1)
         freq_filter = self.freq_filter(spect)
         freq_filter = self.batch_normalization_freq(freq_filter)
@@ -321,13 +324,23 @@ class TempFreqAudioClassificationModel(keras.Model):
         self.average_layer = keras.layers.Average()
         self.conv_block = ConvolutionBlock()
         self.avg_pooling_layer = keras.layers.GlobalAveragePooling2D()
+        self.flatten_layer = keras.layers.Flatten()
         self.dense_block = DenseBlock()
         self.classifier = keras.layers.Dense(num_classes, activation = 'softmax')
 
     def call(self, inputs):
+        print(inputs.shape)
         x_1, x_2 = self.TF_attn_block(inputs)
         x = self.average_layer([x_1, x_2])
+        print(x.shape)
         x = self.conv_block(x)
-        x = self.avg_pooling_layer(x)
+        # x = self.avg_pooling_layer(x)
+        x = self.flatten_layer(x)
         x = self.dense_block(x)
         return self.classifier(x)
+
+
+if __name__ == '__main__':
+    model = TempFreqAudioClassificationModel(num_classes=1)
+    print(model(tf.zeros(shape = (10,110250))))
+    print(model.summary())
