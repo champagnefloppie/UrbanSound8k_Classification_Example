@@ -1,346 +1,64 @@
-from typing import List, Tuple
-
 import tensorflow as tf
 from tensorflow import keras
 
-#TODO allow for a config or some parameters to be passed to this, so class does not need to be edited directly
-class ConvolutionBlock(keras.layers.Layer):
+import model_training.models.layer_blocks as lb
 
-    """Class that creates convolution block of Audio Classification model. Fed into wrapper below that compiles complete model into kersas.Model class.
+# TODO: Decouple this model from the layers within it. Pass the layers to it. Would be a more sound way of doing this. 
+# NOTE: This model is designed to take as input 4 seconds of audio sampled at 22050Hz (array of shape (batch_size, 88200))
 
-    Args:
-        keras.layers.Layer (): Inherits from a keras layer class, to allow block to be called as a single layer.
-    """
-    def __init__(self):
-        """
-
-        Args:
-            num_classes (int): Number of output classes
-        """
-        super().__init__()
-        self.conv_1 = keras.layers.Conv2D(
-            16, 
-            (4,4), 
-            strides = (2,2), 
-            padding='same', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_1 = keras.layers.MaxPooling2D()
-        self.conv_2 = keras.layers.Conv2D(
-            32, 
-            (4,4), 
-            strides = (2,2), 
-            padding='same', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_2 = keras.layers.MaxPooling2D()
-        self.conv_3 = keras.layers.Conv2D(
-            64, 
-            (4,4), 
-            strides = (2,2), 
-            padding='same', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_3 = keras.layers.MaxPooling2D()
-
-    def call(self, inputs):
-        x = self.conv_1(inputs)
-        x = self.max_pooling_1(x)
-        x = self.conv_2(x)
-        x = self.max_pooling_2(x)
-        x = self.conv_3(x)
-        x = self.max_pooling_3(x)
-        return x
-
-#TODO allow for a config or some parameters to be passed to this, so class does not need to be edited directly
-class DenseBlock(keras.layers.Layer):
-    """Class that creatses dense block of image classifier. Fed into wrapper below that compiles complete model into kersas.models.Model class.
-
-    Args:
-        keras.layers.Layer (): Inherits from a keras layer class, to allow block to be called as a single layer.
-    """
-    def __init__(self):
-        super().__init__()
-        self.layer_1 = keras.layers.Dense(128, activation='relu')
-        self.layer_2 = keras.layers.Dense(86, activation = 'relu')
-        self.layer_3 = keras.layers.Dense(32, activation = 'relu')
-        self.dropout_1 = keras.layers.Dropout(0.2)
-        self.dropout_2 = keras.layers.Dropout(0.2)
-        self.dropout_3 = keras.layers.Dropout(0.2)
-
-    def call(self, inputs):
-        x = self.layer_1(inputs)
-        x = self.dropout_1(x)
-        x = self.layer_2(x)
-        x = self.dropout_2(x)
-        x = self.layer_3(x)
-        x = self.dropout_3(x)
-        return x
-    
-class FreqAttentionBlock(keras.layers.Layer):
-    """Class that creates our frequency portion of the temporal frequency attention mechanism block using mel spectrograms in a similar manner to Mu., W, et al. 2021
-       Paper linked here: https://www.nature.com/articles/s41598-021-01045-4#auth-Wenjie-Mu-Aff1
-    Args:
-        keras.layers.Layer (): Inherits from a keras layer class, to allow block to be called as a single layer.
-    """
-    def __init__(self):
-        
-        super().__init__()
-        self.freq_conv_1 = keras.layers.Conv2D(
-            128, 
-            (4, 1), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_1 = keras.layers.MaxPooling2D(pool_size = (2,1))
-        self.freq_conv_2 = keras.layers.Conv2D(
-            128, 
-            (4, 1), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_2 = keras.layers.MaxPooling2D(pool_size = (2,1))
-        self.freq_conv_3 = keras.layers.Conv2D(
-            128, 
-            (4, 1), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_3 = keras.layers.MaxPooling2D(pool_size = (2,1))
-        self.freq_conv_4 = keras.layers.Conv2D(
-            128, 
-            (4, 1), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_4 = keras.layers.MaxPooling2D(pool_size = (2,1))
-        self.freq_conv_5 = keras.layers.Conv2D(
-            128, 
-            (4, 1), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_5 = keras.layers.MaxPooling2D(pool_size = (2,1))
-
-    def call(self, inputs):
-        """_summary_
-
-        Args:
-            inputs (_type_): Mel Spectrogram with dimension added so it is 4d
-
-        Returns:
-            tf.Tensor: Output frequency attention filter
-        """
-        freq_attn = self.freq_conv_1(inputs)
-        freq_attn = self.max_pooling_1(freq_attn)
-        freq_attn = self.freq_conv_2(freq_attn)
-        freq_attn = self.max_pooling_2(freq_attn)
-        freq_attn = self.freq_conv_3(freq_attn)
-        freq_attn = self.max_pooling_3(freq_attn)
-        freq_attn = self.freq_conv_4(freq_attn)
-        freq_attn = self.max_pooling_4(freq_attn)
-        freq_attn = self.freq_conv_5(freq_attn)
-        freq_attn = self.max_pooling_5(freq_attn)
-
-        return freq_attn
-    
-class TempAttentionBlock(keras.layers.Layer):
-    """Class that creates our temporal portion of the temporal frequency attention mechanism block using mel spectrograms in a similar manner to Mu., W, et al. 2021
-       Paper linked here: https://www.nature.com/articles/s41598-021-01045-4#auth-Wenjie-Mu-Aff1
-    Args:
-        keras.layers.Layer (): Inherits from a keras layer class, to allow block to be called as a single layer.
-    """
-    def __init__(self):
-        
-        super().__init__()
-        self.temp_conv_1 = keras.layers.Conv2D(
-            128, 
-            (1, 4), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_1 = keras.layers.MaxPooling2D(pool_size = (1,2))
-        self.temp_conv_2 = keras.layers.Conv2D(
-            128, 
-            (1, 4), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_2 = keras.layers.MaxPooling2D(pool_size = (1,2))
-        self.temp_conv_3 = keras.layers.Conv2D(
-            128, 
-            (1, 4), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_3 = keras.layers.MaxPooling2D(pool_size = (1,2))
-        self.temp_conv_4 = keras.layers.Conv2D(
-            128, 
-            (1, 4), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_4 = keras.layers.MaxPooling2D(pool_size = (1,2))
-        self.temp_conv_5 = keras.layers.Conv2D(
-            128, 
-            (1, 4), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_5 = keras.layers.MaxPooling2D(pool_size = (1,6))
-        self.temp_conv_6 = keras.layers.Conv2D(
-            128, 
-            (1, 4), 
-            strides = (1,1), 
-            padding='valid', 
-            activation='relu', 
-            kernel_initializer = tf.keras.initializers.HeNormal()
-            )
-        self.max_pooling_6 = keras.layers.MaxPooling2D(pool_size = (1,2))
-
-    def call(self, inputs):
-        """_summary_
-
-        Args:
-            inputs (_type_): Mel Spectrogram with dimension added so it is 4d
-
-        Returns:
-            tf.Tensor: Output temporal attention filter
-        """
-        temp_attn = self.temp_conv_1(inputs)
-        temp_attn = self.max_pooling_1(temp_attn)
-        temp_attn = self.temp_conv_2(temp_attn)
-        temp_attn = self.max_pooling_2(temp_attn)
-        temp_attn = self.temp_conv_3(temp_attn)
-        temp_attn = self.max_pooling_3(temp_attn)
-        temp_attn = self.temp_conv_4(temp_attn)
-        temp_attn = self.max_pooling_4(temp_attn)
-        temp_attn = self.temp_conv_5(temp_attn)
-        temp_attn = self.max_pooling_5(temp_attn)
-        # temp_attn = self.temp_conv_6(temp_attn)
-        # temp_attn = self.max_pooling_6(temp_attn)
-        
-        return temp_attn
-    
-class CompleteAttentionBlock(keras.layers.Layer):
-    """Class that creates our temporal portion of the temporal frequency attention mechanism block using mel spectrograms in a similar manner to Mu., W, et al. 2021
-       Paper linked here: https://www.nature.com/articles/s41598-021-01045-4#auth-Wenjie-Mu-Aff1
-    Args:
-        keras.layers.Layer (): Inherits from a keras layer class, to allow block to be called as a single layer.
-    """
-    def __init__(self,
-                 fft_length=1024,
-                 sequence_stride=512,
-                 window='hamming',
-                 sampling_rate=22050,
-                 num_mel_bins=128,
-                 power_to_db=True,
-                ):
-        
-        super().__init__()
-        self.mel_spectrogram = keras.layers.MelSpectrogram(fft_length=fft_length,
-                                                            sequence_stride=sequence_stride,
-                                                            window=window,
-                                                            sampling_rate=sampling_rate,
-                                                            num_mel_bins = num_mel_bins,
-                                                            power_to_db = power_to_db
-                                                            )
-        self.batch_normalization_input = keras.layers.BatchNormalization()
-        self.freq_filter = FreqAttentionBlock()
-        self.temp_filter = TempAttentionBlock()
-        self.batch_normalization_freq = keras.layers.BatchNormalization()
-        self.batch_normalization_temp = keras.layers.BatchNormalization()
-        self.multiply_freq = keras.layers.Multiply()
-        self.multiply_temp = keras.layers.Multiply()
-
-    def call(self, inputs):
-        """_summary_
-
-        Args:
-            inputs (_type_): Mel Spectrogram with dimension added so it is 4d
-
-        Returns:
-            tf.Tensor: Output frequency attention filter
-        """
-        spect = self.mel_spectrogram(inputs)
-        #spect = self.batch_normalization_input(spect)
-        spect = tf.expand_dims(spect, axis = -1)
-        freq_filter = self.freq_filter(spect)
-        freq_filter = self.batch_normalization_freq(freq_filter)
-        temp_filter = self.temp_filter(spect)
-        temp_filter = self.batch_normalization_temp(temp_filter)
-        # apply filters to spectrogram
-        freq_spect = self.multiply_freq([spect, freq_filter])
-        temp_spect = self.multiply_temp([spect, temp_filter])
-        
-
-        return freq_spect, temp_spect
-    
 class TempFreqAudioClassificationModel(keras.Model):
-    """Class that wraps all relevant blocks to form Temporal-Frequency Attention Based Conv Net
+    """
+    Class that wraps/constructs all relevant blocks to form Temporal-Frequency Attention Based Conv Net.
 
     """
 
-    def __init__(self, num_classes: int, fft_length=1024,
-                 sequence_stride=512,
-                 window='hamming',
-                 sampling_rate=22050,
-                 num_mel_bins=128,
-                 power_to_db=True,):
+    def __init__(self, num_classes: int,
+                 fft_length: int = 1024,
+                 sequence_stride: int = 512,
+                 window: str = 'hamming',
+                 sampling_rate: int = 22050,
+                 num_mel_bins: int = 128,
+                 power_to_db: bool = True,):
         """
+        Method to initialize the Model. This method collects all the above layers, and converts them into a model instance.
+    
         Args:
-            num_classes (int): Number of classes a classifier aims to classify.
-        """
+            num_classes (int): Number of classes a classifier aims to classify. This inform size of last layer of dense network that
+                               is appended to the dense block.
+            fft_length (int, optional): Mel-spectrogram parameter, passed to CompleteAttentionBlock. The number of frequency bins considered for each spectrogram. Defaults to 1024.
+            sequence_stride (int, optional): Mel-spectrogram parameter, passed to CompleteAttentionBlock. The number of samples between successive STFT columns. Defaults to 512.
+            window (str, optional): Mel-spectrogram parameter, passed to CompleteAttentionBlock. Window function applied to each STFT. Defaults to 'hamming'.
+            sampling_rate (int, optional): Mel-spectrogram parameter, passed to CompleteAttentionBlock. Sample rate of the audio in hertz. Defaults to 22050.
+            num_mel_bins (int, optional): Mel-spectrogram parameter, passed to CompleteAttentionBlock. Number of mel bins to generate when frequencies are re-grouped. Defaults to 128.
+            power_to_db (bool, optional): Mel-spectrogram parameter, passed to CompleteAttentionBlock. Convert magnitude of spectrogram values from power to decibels (log scale). Defaults to True.
+        """ 
         super().__init__()
-        self.TF_attn_block = CompleteAttentionBlock(fft_length=fft_length,
+        self.TF_attn_block = lb.CompleteAttentionBlock(fft_length=fft_length,
                                                             sequence_stride=sequence_stride,
                                                             window=window,
                                                             sampling_rate=sampling_rate,
                                                             num_mel_bins = num_mel_bins,
                                                             power_to_db = power_to_db)
         self.average_layer = keras.layers.Average()
-        self.conv_block = ConvolutionBlock()
+        self.conv_block = lb.ConvolutionBlock()
         self.avg_pooling_layer = keras.layers.GlobalAveragePooling2D()
         self.flatten_layer = keras.layers.Flatten()
-        self.dense_block = DenseBlock()
+        self.dense_block = lb.DenseBlock()
         self.classifier = keras.layers.Dense(num_classes, activation = 'softmax')
 
-    def call(self, inputs):
-        print(inputs.shape)
+    def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        """Model call on raw audio input.
+
+        Args:
+            inputs (tf.Tensor): Audio in raw form. Must be float32 scaled between -1 and 1, with shape (batch size, 88200).
+
+        Returns:
+            tf.Tensor: Estimated class probabilities.
+        """
         x_1, x_2 = self.TF_attn_block(inputs)
         x = self.average_layer([x_1, x_2])
-        print(x.shape)
         x = self.conv_block(x)
         # x = self.avg_pooling_layer(x)
         x = self.flatten_layer(x)
         x = self.dense_block(x)
         return self.classifier(x)
-
-
-if __name__ == '__main__':
-    model = TempFreqAudioClassificationModel(num_classes=1)
-    print(model(tf.zeros(shape = (10,110250))))
-    print(model.summary())

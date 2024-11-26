@@ -10,7 +10,7 @@ class TrainingInstance:
     """Class that tracks a model through its training process
     """
     def __init__(self,
-                 model: keras.model,
+                 model: keras.Model,
                  loss_func: keras.losses.Loss,
                  optimizer: keras.optimizers.Optimizer,
                  training_metrics: List[keras.metrics.Metric],
@@ -40,12 +40,33 @@ class TrainingInstance:
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
         for ind, _ in enumerate(self.training_metrics):
             self.training_metrics[ind].update_state(y, y_hat)
+        return loss_value
     
     @tf.function
     def test_step(self, x: tf.Tensor, y: tf.Tensor):
         y_hat = self.model(x, training=False)
         for ind, _ in enumerate(self.validation_metrics):
             self.validation_metrics[ind].update_state(y, y_hat)
+
+    def get_train_metric_state(self) -> List[tf.Tensor]:
+        current_state = [metric.result() for metric in self.training_metrics]
+        [metric.reset_state() for metric in self.training_metrics]
+        return current_state
+
+    def get_validation_metric_state(self) -> List[tf.Tensor]:
+        current_state = [metric.result() for metric in self.validation_metrics]
+        [metric.reset_state() for metric in self.validation_metrics]
+        return current_state
+    
+    def reset_training_metrics(self):
+        for metric in self.training_metrics:
+            metric.reset_state()
+
+    def reset_validation_metrics(self):
+        for metric in self.validation_metrics:
+            metric.reset_state()
+
+
     
 
         
