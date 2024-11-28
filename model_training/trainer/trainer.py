@@ -50,12 +50,10 @@ class TrainingInstance:
 
     def get_train_metric_state(self) -> List[tf.Tensor]:
         current_state = [metric.result() for metric in self.training_metrics]
-        [metric.reset_state() for metric in self.training_metrics]
         return current_state
 
     def get_validation_metric_state(self) -> List[tf.Tensor]:
         current_state = [metric.result() for metric in self.validation_metrics]
-        [metric.reset_state() for metric in self.validation_metrics]
         return current_state
     
     def reset_training_metrics(self):
