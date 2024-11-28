@@ -1,4 +1,4 @@
-# BIDRCLEF_2024
+# UrbanSound8K Coding Sample
 My Private repo for storing code for Urban8k Audio Classification Example. 
 
 # Instructions to run code on Ubuntu 22.04 (Either WSL2 or native Ubuntu)
