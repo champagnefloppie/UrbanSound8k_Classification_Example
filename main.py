@@ -16,9 +16,9 @@ from model_training.trainer.trainer import TrainingInstance
 # Global variables
 EPOCHS = 100
 BATCH_SIZE = 16
-URBAN_8K_WAV_PATH = Path(r'/mnt/d/2024/proj/BIDRCLEF_2024/UrbanSound8K/audio')
-URBAN_8K_METADATA_PATH = Path(r'/mnt/d/2024/proj/BIDRCLEF_2024/UrbanSound8K/metadata/UrbanSound8K.csv')
-LOGPATH = Path(r'/mnt/d/2024/proj/BIDRCLEF_2024/logs')
+URBAN_8K_WAV_PATH = Path(r'/path/to/audio/subdirectory') # for UrbanSound8k it is the directory './UrbanSound8K/audio'
+URBAN_8K_METADATA_PATH = Path(r'/path/to/metdata/csv')
+LOGPATH = Path(r'/path/to/logs')
 
 
 def pull_metadata(metadata_path: Path) -> pd.DataFrame:

@@ -17,8 +17,8 @@ from model_training.trainer.trainer import TrainingInstance
 # Global variables
 EPOCHS = 100
 BATCH_SIZE = 16
-URBAN_8K_WAV_PATH = Path(r'/mnt/d/2024/proj/BIDRCLEF_2024/UrbanSound8K/audio')
-URBAN_8K_METADATA_PATH = Path(r'/mnt/d/2024/proj/BIDRCLEF_2024/UrbanSound8K/metadata/UrbanSound8K.csv')
+URBAN_8K_WAV_PATH = Path(r'')
+URBAN_8K_METADATA_PATH = Path(r'')
 
 # Pull metadata
 metadata = pd.read_csv(URBAN_8K_METADATA_PATH)
@@ -43,7 +43,7 @@ training_instance = TrainingInstance(
 
 # Create tensorboard log
 current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-training_log_path = Path('/mnt/d/2024/proj/BIDRCLEF_2024/logs') / Path(f"{current_time}")
+training_log_path = Path('') / Path(f"{current_time}")
 training_summary_writer = tf.summary.create_file_writer(training_log_path.__str__())
 
 # Run training across each fold -> turn this off if you want to. Maybe turn this into a function.
